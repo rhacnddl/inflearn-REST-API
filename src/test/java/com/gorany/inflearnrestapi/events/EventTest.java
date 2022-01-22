@@ -21,16 +21,4 @@ class EventTest {
         assertThat(event).isNotNull();
     }
 
-    @Test
-    @DisplayName("javaBean")
-    public void java_bean() throws Exception {
-        //given
-        Event event = new Event();
-        event.setName("Event");
-        event.setDescription("Spring");
-        //when
-
-        //then
-        assertThat(event).extracting("name").isEqualTo("Event");
-    }
 }
