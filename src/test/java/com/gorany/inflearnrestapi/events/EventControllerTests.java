@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDateTime;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,14 +15,19 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.hateoas.MediaTypes;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest
+@SpringBootTest(webEnvironment = WebEnvironment.MOCK)
 @ExtendWith(MockitoExtension.class)
+@AutoConfigureMockMvc
 public class EventControllerTests {
 
     @Autowired
@@ -30,35 +36,36 @@ public class EventControllerTests {
     @Autowired
     ObjectMapper mapper;
 
-    @MockBean
-    EventRepository eventRepository;
-
     @Test
     @DisplayName("HTTP POST 요청")
     public void http_post_request() throws Exception {
         //given
         Event event = createEvent("Spring", "REST API Dev", 100, 200, 100, "강남역 D2");
 
-        when(eventRepository.save(event)).thenReturn(event);
+        //when
 
+        //then
         mvc.perform(post("/api/events/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaTypes.HAL_JSON)
                 .content(mapper.writeValueAsString(event))
             )
             .andDo(print())
-            .andExpect(jsonPath("id").exists())
-            .andExpect(status().isCreated());
-        //when
-
-        //then
-
+            .andExpectAll(
+                result ->
+                jsonPath("id").exists(),
+                status().isCreated(),
+                header().exists(HttpHeaders.LOCATION),
+                header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE),
+                jsonPath("id").value(Matchers.not(100)),
+                jsonPath("eventStatus").value(Matchers.equalTo(EventStatus.DRAFT))
+            );
     }
 
     private Event createEvent(String name, String desc, int basePrice, int maxPrice, int limitOfEnrollment,
         String location) {
         return Event.builder()
-            .id(1)
+            .id(100)
             .name(name)
             .description(desc)
             .beginEnrollmentDateTime(LocalDateTime.now())
@@ -69,6 +76,7 @@ public class EventControllerTests {
             .maxPrice(maxPrice)
             .limitOfEnrollment(limitOfEnrollment)
             .location(location)
+            .eventStatus(EventStatus.PUBLISHED)
             .build();
     }
 }
