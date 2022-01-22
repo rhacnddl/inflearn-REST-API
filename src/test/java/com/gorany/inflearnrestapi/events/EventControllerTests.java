@@ -58,7 +58,26 @@ public class EventControllerTests {
                 header().exists(HttpHeaders.LOCATION),
                 header().string(HttpHeaders.CONTENT_TYPE, MediaTypes.HAL_JSON_VALUE),
                 jsonPath("id").value(Matchers.not(100)),
-                jsonPath("eventStatus").value(Matchers.equalTo(EventStatus.DRAFT))
+                jsonPath("eventStatus").value(Matchers.equalTo(EventStatus.DRAFT.toString()))
+            );
+    }
+
+    @Test
+    @DisplayName("Bad Request - create Event")
+    public void bad_request_create_event() throws Exception {
+        //given
+        Event event = createEvent("Spring", "REST API Dev", 100, 200, 100, "강남역 D2");
+        //when
+
+        //then
+        mvc.perform(post("/api/event/")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(mapper.writeValueAsString(event))
+            .accept(MediaTypes.HAL_JSON))
+            .andDo(print())
+            .andExpectAll(
+                result ->
+                    status().isBadRequest()
             );
     }
 
